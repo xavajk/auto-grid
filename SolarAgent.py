@@ -1,8 +1,10 @@
 import datetime
 
-from spade.agent            import Agent
-from spade.behaviour        import CyclicBehaviour, PeriodicBehaviour
-from pv_forecasting_ml      import PVPredict
+from spade.agent        import Agent
+from spade.behaviour    import CyclicBehaviour, PeriodicBehaviour
+from spade.template     import Template
+from spade.message      import Message
+from pv_forecasting     import PVPredict
 
 class SolarAgent(Agent):
     class RecvBehav(CyclicBehaviour):
@@ -26,6 +28,11 @@ class SolarAgent(Agent):
             print("[SOLAR] Forecasting behavior running...")
             pred = PVPredict()
             await pred.run()
+            msg = Message(to="wind@blah.im")
+            msg.set_metadata("performative", "inform")
+            msg.body = "Successfully ran solar power forecasting..."
+            await self.send(msg)
+
 
         async def on_end(self):
             print("[SOLAR] Forcasting behavior stopped.")
