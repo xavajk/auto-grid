@@ -1,2 +1,8 @@
 spade
 python-dotenv
+numpy
+pandas
+tensorflow
+scikit-learn
+keras
+matplotlib

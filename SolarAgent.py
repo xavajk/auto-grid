@@ -1,5 +1,8 @@
-from spade.agent        import Agent
-from spade.behaviour    import CyclicBehaviour, PeriodicBehaviour
+import datetime
+
+from spade.agent            import Agent
+from spade.behaviour        import CyclicBehaviour, PeriodicBehaviour
+from pv_forecasting_ml      import PVPredict
 
 class SolarAgent(Agent):
     class RecvBehav(CyclicBehaviour):
@@ -20,11 +23,17 @@ class SolarAgent(Agent):
 
     class ForecastBehav(PeriodicBehaviour):
         async def run(self):
-            print("ForecastBehav running...")
-            
+            print("[SOLAR] Forecasting behavior running...")
+            pred = PVPredict()
+            await pred.run()
 
+        async def on_end(self):
+            print("[SOLAR] Forcasting behavior stopped.")
 
     async def setup(self):
         print("[SOLAR] SolarAgent started!")
         rbehav = self.RecvBehav()
+        start = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        fbehav = self.ForecastBehav(period=60, start_at=start)
         self.add_behaviour(rbehav)
+        self.add_behaviour(fbehav)

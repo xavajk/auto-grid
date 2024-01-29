@@ -1,8 +1,8 @@
 import os
 import spade
 
-from dotenv import load_dotenv
-from SolarAgent import SolarAgent
+from dotenv         import load_dotenv
+from SolarAgent     import SolarAgent
 
 load_dotenv()
 
