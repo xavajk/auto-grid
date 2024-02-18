@@ -6,3 +6,9 @@ tensorflow
 scikit-learn
 keras
 matplotlib
+scipy
+spyder
+spyder-kernels
+cvxopt
+PICOS==1.1.2
+pandapower
