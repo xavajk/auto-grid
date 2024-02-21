@@ -31,7 +31,7 @@ class SolarAgent(Agent):
             print("[SOLAR] Forecasting behavior running...")
             pred = PVPredict()
             await pred.run()
-            msg = Message(to="wind@blah.im")
+            msg = Message(to="control@blah.im")
             msg.set_metadata("performative", "inform")
             msg.body = "Successfully ran solar power forecasting..."
             await self.send(msg)

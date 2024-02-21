@@ -29,7 +29,7 @@ class WindAgent(Agent):
             print("[WIND] Forecasting behavior running...")
             pred = WindPredict()
             await pred.run()
-            msg = Message(to="solar@blah.im")
+            msg = Message(to="control@blah.im")
             msg.set_metadata("performative", "inform")
             msg.body = "Successfully ran wind power forecasting..."
             await self.send(msg)
@@ -41,6 +41,6 @@ class WindAgent(Agent):
         print("[WIND] WindAgent started!")
         rbehav = self.RecvBehav()
         start = datetime.datetime.now() + datetime.timedelta(seconds=15)
-        fbehav = self.ForecastBehav(period=60, start_at=start)
+        fbehav = self.ForecastBehav(period=300, start_at=start)
         self.add_behaviour(rbehav)
         self.add_behaviour(fbehav)
