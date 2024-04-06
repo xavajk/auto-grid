@@ -7,7 +7,7 @@ from spade.message          import Message
 from spade.template         import Template
 from spade.behaviour        import CyclicBehaviour, PeriodicBehaviour
 
-from pv_forecasting         import PVPredict
+from tools.pv_forecasting         import PVPredict
 
 class SolarAgent(Agent):
     class RecvBehav(CyclicBehaviour):
@@ -33,6 +33,7 @@ class SolarAgent(Agent):
             await pred.run()
             msg = Message(to="control@blah.im")
             msg.set_metadata("performative", "inform")
+            msg.set_metadata("conversation-id", "forecast")
             msg.body = "Successfully ran solar power forecasting..."
             await self.send(msg)
 
@@ -42,7 +43,12 @@ class SolarAgent(Agent):
     async def setup(self):
         print("[SOLAR] SolarAgent started!")
         rbehav = self.RecvBehav()
+        self.add_behaviour(rbehav)
+
+        # add forecasting behavior with template
         start = datetime.datetime.now() + datetime.timedelta(seconds=15)
         fbehav = self.ForecastBehav(period=60, start_at=start)
-        self.add_behaviour(rbehav)
+        ftemplate = Template()
+        ftemplate.set_metadata("performative", "inform")
+        ftemplate.set_metadata("conversation-id", "forecast")
         self.add_behaviour(fbehav)

@@ -27,5 +27,5 @@ class ControlAgent(Agent):
         rbehav = self.RecvForecastBehav()
         template = Template()
         template.set_metadata("performative", "inform")
-        template.set_metadata("message-subject", "forecast")
+        template.set_metadata("conversation-id", "forecast")
         self.add_behaviour(rbehav, template=template)

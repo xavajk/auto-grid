@@ -2,11 +2,11 @@ import os
 import spade
 
 from dotenv         import load_dotenv
-from SolarAgent     import SolarAgent
-from WindAgent      import WindAgent
-from BatteryAgent   import BatteryAgent
-from LoadAgent      import LoadAgent
-from ControlAgent   import ControlAgent
+from agents.SolarAgent     import SolarAgent
+from agents.WindAgent      import WindAgent
+from agents.BatteryAgent   import BatteryAgent
+from agents.LoadAgent      import LoadAgent
+from agents.ControlAgent   import ControlAgent
 
 load_dotenv()
 

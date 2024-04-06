@@ -6,7 +6,7 @@ from spade.agent            import Agent
 from spade.behaviour        import CyclicBehaviour, PeriodicBehaviour
 from spade.template         import Template
 from spade.message          import Message
-from wind_forecasting       import WindPredict
+from tools.wind_forecasting       import WindPredict
 
 class WindAgent(Agent):
     class RecvBehav(CyclicBehaviour):
