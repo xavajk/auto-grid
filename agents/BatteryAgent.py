@@ -43,4 +43,6 @@ class BatteryAgent(Agent):
         fbehav = self.ForecastBehav(period=60, start_at=start)
         self.add_behaviour(rbehav)
         self.add_behaviour(fbehav)
-        
+
+        self._statuses = []
+        self._status = None
