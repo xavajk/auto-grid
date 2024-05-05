@@ -16,7 +16,7 @@ class ControlAgent(Agent):
 
     class Failure(State):
         async def run(self) -> None:
-            print('----------------------\n[CONTROL] * IN FAILURE STATE *\n----------------------')
+            print('---------------------- [CONTROL] IN FAILURE STATE ----------------------')
             await asyncio.sleep(5)
 
     class Initial(State):
@@ -29,7 +29,7 @@ class ControlAgent(Agent):
                 self.presence.subscribe('microgrid@localhost')
                 print('[CONTROL] Subscribed to Microgrid agent.')
 
-            if self.agent.fail == True:
+            if self.agent.mode == 3:
                 self.set_next_state('fail')
             else:
                 self.set_next_state('query-mg')
@@ -50,20 +50,58 @@ class ControlAgent(Agent):
             self.agent.mg_states.append(reply.body)
 
         async def on_end(self) -> None:
-            if self.agent.fail == True:
+            if self.agent.mode == 3:
                 self.set_next_state('fail')
+            elif self.agent.mode == 0 or self.agent.mode == 1:
+                self.set_next_state('receive-state')
+
+    class ReceiveState(State):
+        async def on_start(self) -> None:
+            print('[CONTROL] Waiting to receive state from Microgrid...')
+
+        async def run(self) -> None:
+            print('[CONTROL] Running optimization for current microgrid state...')
+            await asyncio.sleep(3)
+
+        async def on_end(self) -> None:
+            if self.agent.mode == 3:
+                self.set_next_state('fail')
+            elif self.agent.mode == 0 or self.agent.mode == 1:
+                self.set_next_state('inform-action')
+
+    class InformAction(State):
+        async def on_start(self) -> None:
+            print('[CONTROL] Informing Microgrid of optimized action...')
+
+        async def run(self) -> None:
+            await asyncio.sleep(3)
+
+        async def on_end(self) -> None:
+            if self.agent.mode == 3:
+                self.set_next_state('fail')
+            elif self.agent.mode == 0 or self.agent.mode == 1:
+                self.set_next_state('receive-state')
 
     async def setup(self):
-        self.fail = False
+        self.modes = { 'default': 0, 'sim': 1, 'test': 2, 'fail': 3 }
+        self.mode = self.modes['default']
         
         # microgrid interaction protocol behavior
         self.mgip = self.MicrogridInteractionProtocol()
         self.mgip.add_state(name='init', state=self.Initial(), initial=True)
         self.mgip.add_state(name='query-mg', state=self.QueryMicrogridStructure())
+        self.mgip.add_state(name='inform-action', state=self.InformAction())
+        self.mgip.add_state(name='receive-state', state=self.ReceiveState())
+        self.mgip.add_state(name='fail', state=self.Failure())
         self.mgip.add_transition(source='init', dest='query-mg')
+        self.mgip.add_transition(source='query-mg', dest='receive-state')
+        self.mgip.add_transition(source='receive-state', dest='inform-action')
+        self.mgip.add_transition(source='inform-action', dest='receive-state')
         self.mgip.add_transition(source='init', dest='fail')
         self.mgip.add_transition(source='query-mg', dest='fail')
-        self.add_behaviour(self.mgip, Template(metadata={'performative': 'inform', 'in-reply-to': 'mg'}))
+        self.mgip.add_transition(source='receive-state', dest='fail')
+        self.mgip.add_transition(source='inform-action', dest='fail')
+        self.add_behaviour(self.mgip)
 
         # initialize structures
         self.mg_states = []
