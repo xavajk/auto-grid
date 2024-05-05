@@ -25,24 +25,18 @@ class BatteryAgent(Agent):
             print("[BATTERY] Reciever behavior stopped.")
             await self.agent.stop()
 
-    class ForecastBehav(PeriodicBehaviour):
-        async def run(self):
-            print("[BATTERY] Forecasting behavior running...")
-            msg = Message(to="control@blah.im")
-            msg.set_metadata("performative", "inform")
-            msg.body = "Successfully ran battery power forecasting..."
-            await self.send(msg)
+    # class ForecastBehav(PeriodicBehaviour):
+    #     async def run(self):
+    #         print("[BATTERY] Forecasting behavior running...")
+    #         msg = Message(to="control@blah.im")
+    #         msg.set_metadata("performative", "inform")
+    #         msg.body = "Successfully ran battery power forecasting..."
+    #         await self.send(msg)
 
-        async def on_end(self):
-            print("[BATTERY] Forcasting behavior stopped.")
+    #     async def on_end(self):
+    #         print("[BATTERY] Forcasting behavior stopped.")
 
     async def setup(self):
-        print("[BATTERY] BatteryAgent started!")
+        print("[BATTERY] Battery agent started!")
         rbehav = self.RecvBehav()
-        start = datetime.datetime.now() + datetime.timedelta(seconds=15)
-        fbehav = self.ForecastBehav(period=60, start_at=start)
         self.add_behaviour(rbehav)
-        self.add_behaviour(fbehav)
-
-        self._statuses = []
-        self._status = None

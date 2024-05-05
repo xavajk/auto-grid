@@ -1,54 +1,54 @@
 import os
 import sys
+import asyncio
 import datetime
+
+from aioxmpp                import PresenceShow, PresenceState
 
 from spade.agent            import Agent
 from spade.message          import Message
 from spade.template         import Template
-from spade.behaviour        import CyclicBehaviour, PeriodicBehaviour
+from spade.behaviour        import CyclicBehaviour, TimeoutBehaviour, OneShotBehaviour, FSMBehaviour, State
 
-from tools.pv_forecasting         import PVPredict
+from tools.pv_forecasting   import PVPredict
 
 class SolarAgent(Agent):
-    class RecvBehav(CyclicBehaviour):
-        async def on_start(self):
-            print("[SOLAR] Receiving behavior running...")
+    class SpinupSolar(FSMBehaviour):
+        async def on_start(self) -> None:
+            print("[SOLAR] Beginning initialization...")
+            self.exit_code = 'Initializing'
 
-        async def run(self):
-            msg = await self.receive(timeout=15)
-            if msg:
-                print("[SOLAR] Message received with content: {}".format(msg.body))
-            else:
-                print("[SOLAR] Did not receive any messages after 15 seconds...")
-                print("[SOLAR] Waiting...")
-        
-        async def on_end(self):
-            print("[SOLAR] Reciever behavior stopped.")
-            await self.agent.stop()
+        async def on_end(self) -> None:
+            print("[SOLAR] Agent initialized!")
 
-    class ForecastBehav(PeriodicBehaviour):
-        async def run(self):
-            print("[SOLAR] Forecasting behavior running...")
-            pred = PVPredict()
-            await pred.run()
-            msg = Message(to="control@blah.im")
-            msg.set_metadata("performative", "inform")
-            msg.set_metadata("conversation-id", "forecast")
-            msg.body = "Successfully ran solar power forecasting..."
+    class WaitForControlState(State):
+        async def run(self) -> None:
+            print('[SOLAR] At state one')
+            self.set_template(Template(sender='control@localhost', metadata={'performative': 'subscribe', 'protocol': 'pnp'}))
+            msg = await self.receive(timeout=10)
+            print(f"[SOLAR] Received message from control with body: ")
+            self.set_template(Template(to='solar@localhost', sender='microgrid@localhost', metadata={'performative': 'inform', 'in-reply-to': 'state'}))
+            self.set_next_state('PrepareAndSendState')
+
+    class PrepareAndSendState(State):
+        async def run(self) -> None:
+            print('[SOLAR] At state two')
+            msg = Message(to='microgrid@localhost',
+                          sender='solar@localhost', 
+                          metadata={'performative': 'query', 'reply-with': 'state'})
             await self.send(msg)
-
-        async def on_end(self):
-            print("[SOLAR] Forcasting behavior stopped.")
+            state = await self.receive(timeout=60)
+            print(f"[SOLAR] Received message from microgrid with body: {state.body}")
+            msg = Message(to='control@localhost', 
+                          sender='solar@localhost', 
+                          body=state.body,
+                          metadata={'performative': 'inform', 'in-reply-to': 'state'})
 
     async def setup(self):
-        print("[SOLAR] SolarAgent started!")
-        rbehav = self.RecvBehav()
-        self.add_behaviour(rbehav)
-
-        # add forecasting behavior with template
-        start = datetime.datetime.now() + datetime.timedelta(seconds=15)
-        fbehav = self.ForecastBehav(period=60, start_at=start)
-        ftemplate = Template()
-        ftemplate.set_metadata("performative", "inform")
-        ftemplate.set_metadata("conversation-id", "forecast")
-        self.add_behaviour(fbehav)
+        # initialization behavior
+        self.init = self.SpinupSolar()
+        self.init.add_state(name='WaitForControlState', state=self.WaitForControlState(), initial=True)
+        self.init.add_state(name='PrepareAndSendState', state=self.PrepareAndSendState())
+        self.init.add_transition(source='WaitForControlState', dest='PrepareAndSendState')
+        self.add_behaviour(self.init)
+        print("[SOLAR] Solar agent started!")
